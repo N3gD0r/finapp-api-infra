@@ -36,7 +36,10 @@ def set_integration_uris(uris: dict, body: dict):
 
 def main():
     stack_ref = pulumi.StackReference(f"{PRJ}/{STACK}")
-    invoke_uris = _sync_await(stack_ref.get_output_details('lambdas')).value
+    invoke_uris: dict = _sync_await(stack_ref.get_output_details('lambdas')).value
+    lambda_arns: dict = _sync_await(stack_ref.get_output_details('lambda_arns')).value
+    methods: dict = _sync_await(stack_ref.get_output_details('methods')).value
+
     api_spec = set_integration_uris(uris=invoke_uris, body=SPEC)
 
     rest_api_gateway = aws.apigateway.RestApi(
@@ -58,12 +61,25 @@ def main():
         stage_name="dev",
     )
 
+    perms = []
+    for key, value in lambda_arns:
+        lambda_permission = aws.lambda_.Permission(
+            resource_name="",
+            statement_id=f"AllowExecutionFromApiGateway-{key[:-4]}",
+            action="lambda:InvokeFunction",
+            function=value,
+            principal="apigateway.amazonaws.com",
+            source_arn=f"{rest_api_gateway.arn}/*/{methods[key]}"
+        )
+        perms.append(lambda_permission.statement_id)
+
     pulumi.export("rest_api_arn", rest_api_gateway.arn)
     pulumi.export("rest_api", rest_api_gateway.execution_arn)
     pulumi.export("api_deploy", api_gateway_deployment.id)
     pulumi.export("api_stage_arn", api_stage.arn)
     pulumi.export("api_stage", api_stage.stage_name)
     pulumi.export("api_stage_url", api_stage.invoke_url)
+    pulumi.export("lambda_permissions", perms)
 
 
 if __name__ == "__main__":

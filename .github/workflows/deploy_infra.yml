@@ -53,4 +53,5 @@ jobs:
           echo "stage_arn: ${{ steps.pulumi.outputs.api_stage_arn }}"
           echo "stage_name: ${{ steps.pulumi.outputs.api_stage }}"
           echo "stage_url: ${{ steps.pulumi.outputs.api_stage_url }}"
+          echo "lambda_permissions: ${{ steps.pulumi.outputs.lambda_permissions }}"
 
