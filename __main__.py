@@ -62,7 +62,7 @@ def main():
     )
 
     perms = []
-    for key, value in lambda_arns:
+    for key, value in lambda_arns.items():
         lambda_permission = aws.lambda_.Permission(
             resource_name="",
             statement_id=f"AllowExecutionFromApiGateway-{key[:-4]}",
