@@ -47,6 +47,7 @@ jobs:
 
       - name: Pulumi outputs
         run: |
+          echo "rest_api_arn: ${{ steps.pulumi.outputs.rest_api_arn }}"
           echo "rest_api: ${{ steps.pulumi.outputs.rest_api }}"
           echo "deployment: ${{ steps.pulumi.outputs.api_deploy }}"
           echo "stage_arn: ${{ steps.pulumi.outputs.api_stage_arn }}"

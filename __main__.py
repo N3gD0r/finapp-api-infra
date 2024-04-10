@@ -43,7 +43,7 @@ def main():
         resource_name="rest-api-gateway",
         name="ai-budget-api",
         description="API Gateway for personal budget AI",
-        body=json.dumps(api_spec)
+        body=json.dumps(api_spec),
     )
 
     api_gateway_deployment = aws.apigateway.Deployment(
@@ -58,7 +58,8 @@ def main():
         stage_name="dev",
     )
 
-    pulumi.export("rest_api", rest_api_gateway.arn)
+    pulumi.export("rest_api_arn", rest_api_gateway.arn)
+    pulumi.export("rest_api", rest_api_gateway.execution_arn)
     pulumi.export("api_deploy", api_gateway_deployment.id)
     pulumi.export("api_stage_arn", api_stage.arn)
     pulumi.export("api_stage", api_stage.stage_name)
