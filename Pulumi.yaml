@@ -1,0 +1,10 @@
+name: ai-budget-infra
+runtime:
+  name: python
+  options:
+    virtualenv: .venv
+description: A pulumi program to deploy the infrastructure needed by the AI Budget App
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: ""

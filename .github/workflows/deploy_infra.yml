@@ -1,0 +1,55 @@
+name: Deploy_lambdas
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: 'infra/requirements.txt'
+
+      - name: Setup aws
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Install deps
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - id: pulumi
+        name: Pulumi up
+        uses: pulumi/actions@v5
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_TOKEN }}
+          PULUMI_PRJ: ${{ secrets.PULUMI_PROJECT }}
+          PULUMI_STACK: ${{ secrets.PULUMI_STACK }}
+        with:
+          command: up
+          stack-name: dev
+
+      - name: Pulumi outputs
+        run: |
+          echo "rest_api: ${{ steps.pulumi.outputs.rest_api }}"
+          echo "deployment: ${{ steps.pulumi.outputs.api_deploy }}"
+          echo "stage_arn: ${{ steps.pulumi.outputs.api_stage_arn }}"
+          echo "stage_name: ${{ steps.pulumi.outputs.api_stage }}"
+          echo "stage_url: ${{ steps.pulumi.outputs.api_stage_url }}"
+

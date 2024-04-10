@@ -1,0 +1,70 @@
+from components import SPEC
+from pulumi.runtime.sync_await import _sync_await
+
+import json
+import os
+import pulumi
+import pulumi_aws as aws
+
+
+PRJ = os.getenv('PULUMI_PRJ')
+STACK = os.getenv('PULUMI_STACK')
+
+
+def set_integration_uris(uris: dict, body: dict):
+    api_spec = dict(body)
+    paths = api_spec['paths']
+
+    paths['/login']['post']['x-amazon-apigateway-integration']['uri'] = uris['login']
+    paths['/register']['post']['x-amazon-apigateway-integration']['uri'] = uris['register']
+
+    paths['/expense_categories']['get']['x-amazon-apigateway-integration']['uri'] = uris['get_categories']
+    paths['/expense_categories/{id}']['get']['x-amazon-apigateway-integration']['uri'] = uris['get_category']
+
+    paths['/chat_history']['get']['x-amazon-apigateway-integration']['uri'] = uris['get_chat_history']
+    paths['/chat_history']['post']['x-amazon-apigateway-integration']['uri'] = uris['post_chat_history']
+    paths['/chat_history']['delete']['x-amazon-apigateway-integration']['uri'] = uris['delete_chats']
+
+    paths['/expenses']['get']['x-amazon-apigateway-integration']['uri'] = uris['get_expenses']
+    paths['/expenses']['post']['x-amazon-apigateway-integration']['uri'] = uris['post_expense']
+
+    paths['/expenses/{id}']['get']['x-amazon-apigateway-integration']['uri'] = uris['get_expense']
+    paths['/expenses/{id}']['put']['x-amazon-apigateway-integration']['uri'] = uris['update_expense']
+    paths['/expenses/{id}']['delete']['x-amazon-apigateway-integration']['uri'] = uris['delete_expense']
+    return api_spec
+
+
+def main():
+    stack_ref = pulumi.StackReference(f"{PRJ}/{STACK}")
+    invoke_uris = _sync_await(stack_ref.get_output_details('lambdas')).value
+    api_spec = set_integration_uris(uris=invoke_uris, body=SPEC)
+
+    rest_api_gateway = aws.apigateway.RestApi(
+        resource_name="rest-api-gateway",
+        name="ai-budget-api",
+        description="API Gateway for personal budget AI",
+        body=json.dumps(api_spec)
+    )
+
+    api_gateway_deployment = aws.apigateway.Deployment(
+        resource_name="api-deployment",
+        rest_api=rest_api_gateway.id,
+    )
+
+    api_stage = aws.apigateway.Stage(
+        resource_name="api-stage-dev",
+        rest_api=rest_api_gateway.id,
+        deployment=api_gateway_deployment.id,
+        stage_name="dev",
+    )
+
+    pulumi.export("rest_api", rest_api_gateway.execution_arn)
+    pulumi.export("api_deploy", api_gateway_deployment.name)
+    pulumi.export("api_stage_arn", api_stage.arn)
+    pulumi.export("api_stage", api_stage.stage_name)
+    pulumi.export("api_stage_url", api_stage.invoke_url)
+
+
+if __name__ == "__main__":
+    main()
+
