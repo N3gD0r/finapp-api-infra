@@ -1,4 +1,5 @@
 from components import SPEC
+from pulumi.resource import ResourceOptions
 from pulumi.runtime.sync_await import _sync_await
 
 import json
@@ -52,6 +53,7 @@ def main():
     api_gateway_deployment = aws.apigateway.Deployment(
         resource_name="api-deployment",
         rest_api=rest_api_gateway.id,
+        opts=ResourceOptions(depends_on=[rest_api_gateway])
     )
 
     api_stage = aws.apigateway.Stage(
@@ -59,6 +61,7 @@ def main():
         rest_api=rest_api_gateway.id,
         deployment=api_gateway_deployment.id,
         stage_name="dev",
+        opts=ResourceOptions(depends_on=[rest_api_gateway, api_gateway_deployment])
     )
 
     perms = []
@@ -69,7 +72,8 @@ def main():
             action="lambda:InvokeFunction",
             function=value,
             principal="apigateway.amazonaws.com",
-            source_arn=rest_api_gateway.execution_arn.apply(lambda arn: f"{arn}/*/{methods[key]}")
+            source_arn=rest_api_gateway.execution_arn.apply(lambda arn: f"{arn}/dev/{methods[key]}"),
+            opts=ResourceOptions(depends_on=[rest_api_gateway])
         )
         perms.append(lambda_permission.statement_id)
 
