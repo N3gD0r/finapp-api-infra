@@ -58,8 +58,8 @@ def main():
         stage_name="dev",
     )
 
-    pulumi.export("rest_api", rest_api_gateway.execution_arn)
-    pulumi.export("api_deploy", api_gateway_deployment.name)
+    pulumi.export("rest_api", rest_api_gateway.arn)
+    pulumi.export("api_deploy", api_gateway_deployment.id)
     pulumi.export("api_stage_arn", api_stage.arn)
     pulumi.export("api_stage", api_stage.stage_name)
     pulumi.export("api_stage_url", api_stage.invoke_url)
