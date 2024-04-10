@@ -69,7 +69,7 @@ def main():
             action="lambda:InvokeFunction",
             function=value,
             principal="apigateway.amazonaws.com",
-            source_arn=f"{rest_api_gateway.arn}/*/{methods[key]}"
+            source_arn=rest_api_gateway.arn.apply(lambda arn: f"{arn}/*/{methods[key]}")
         )
         perms.append(lambda_permission.statement_id)
 
