@@ -7,7 +7,6 @@ import os
 import pulumi
 import pulumi_aws as aws
 
-
 PRJ = os.getenv('PULUMI_PRJ')
 STACK = os.getenv('PULUMI_STACK')
 
@@ -96,4 +95,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
