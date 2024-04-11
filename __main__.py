@@ -64,21 +64,29 @@ def main():
         opts=ResourceOptions(depends_on=[rest_api_gateway, api_gateway_deployment])
     )
 
-    perms = []
+    perms = {}
     for key, value in lambda_arns.items():
+        lp_name = f"lambda-permission-{key[:-4]}"
+        endpoint = methods[key]
+        source_arn = pulumi.Output.concat(
+            rest_api_gateway.execution_arn,
+            "/*/",
+            endpoint
+        )
+
         lambda_permission = aws.lambda_.Permission(
-            resource_name=f"lambda-permission-{key[:-4]}",
-            statement_id=f"AllowExecutionFromApiGateway-{key[:-4]}",
+            resource_name=lp_name,
             action="lambda:InvokeFunction",
             function=value,
             principal="apigateway.amazonaws.com",
-            source_arn=rest_api_gateway.execution_arn.apply(lambda arn: f"{arn}/dev/{methods[key]}"),
+            source_arn=source_arn,
             opts=ResourceOptions(depends_on=[rest_api_gateway])
         )
-        perms.append(lambda_permission.statement_id)
+        perms[lp_name] = lambda_permission.source_arn
 
     pulumi.export("rest_api_arn", rest_api_gateway.arn)
     pulumi.export("rest_api", rest_api_gateway.execution_arn)
+    pulumi.export("rest_api_root_id", rest_api_gateway.root_resource_id)
     pulumi.export("api_deploy", api_gateway_deployment.id)
     pulumi.export("api_stage_arn", api_stage.arn)
     pulumi.export("api_stage", api_stage.stage_name)
